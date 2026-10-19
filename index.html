@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Article Island: Group Quest</title>
+    <title>Article Island: Digital Question Deck</title>
     <style>
         :root {
             --primary: #4F46E5;
@@ -17,164 +17,221 @@
             background-color: var(--bg);
             color: var(--text);
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             min-height: 100vh;
             margin: 0;
+            padding: 20px;
         }
-        #game-container {
-            background: white;
-            padding: 2rem;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        h1 { color: var(--primary); text-align: center; margin-bottom: 5px;}
+        p.subtitle { text-align: center; color: #6B7280; margin-bottom: 30px;}
+        
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
             max-width: 600px;
-            width: 90%;
-            text-align: center;
+            width: 100%;
         }
-        h1 { color: var(--primary); margin-top: 0; }
-        .team-turn { font-size: 1.2rem; font-weight: bold; color: var(--secondary); margin-bottom: 1rem; }
-        .question-box {
-            background: #EEF2FF;
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin: 1.5rem 0;
-            font-size: 1.3rem;
-            min-height: 80px;
-            display: flex;
-            align-items: center;
+
+        .num-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 20px 0;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+
+        .num-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            background-color: #4338CA;
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+
+        .num-btn:disabled {
+            background-color: #D1D5DB;
+            color: #9CA3AF;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
             justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
         }
-        .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-        button {
-            padding: 12px 24px;
-            font-size: 1.1rem;
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 25px rgba(0,0,0,0.2);
+            animation: popIn 0.3s ease-out;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .question-display {
+            font-size: 1.5rem;
+            margin-bottom: 25px;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        .answer-display {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--secondary);
+            margin-bottom: 25px;
+            display: none;
+            min-height: 40px;
+        }
+
+        .action-btn {
+            background-color: var(--secondary);
+            color: white;
             border: none;
             border-radius: 8px;
-            cursor: pointer;
+            padding: 12px 24px;
+            font-size: 1.1rem;
             font-weight: bold;
-            transition: transform 0.1s;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%;
+            margin-bottom: 10px;
         }
-        button:active { transform: scale(0.95); }
-        .btn-a, .btn-an, .btn-the, .btn-none { background: var(--primary); color: white; flex: 1; min-width: 100px;}
-        .btn-next { background: var(--secondary); color: white; width: 100%; margin-top: 1rem; display: none;}
-        .feedback { font-size: 1.1rem; margin-top: 1rem; font-weight: bold; min-height: 24px; }
-        .correct { color: var(--secondary); }
-        .incorrect { color: var(--danger); }
-        .progress { margin-top: 1.5rem; font-size: 0.9rem; color: #6B7280; }
+
+        .action-btn:hover { background-color: #059669; }
+        
+        .close-btn {
+            background-color: #6B7280;
+        }
+        .close-btn:hover { background-color: #4B5563; }
+
     </style>
 </head>
 <body>
 
-<div id="game-container">
     <h1>Article Island</h1>
-    <div class="team-turn" id="turn-indicator">Team 1's Turn</div>
-    
-    <div class="question-box" id="question-text">Loading question...</div>
-    
-    <div class="btn-group" id="answer-buttons">
-        <button class="btn-a" onclick="checkAnswer('a')">a</button>
-        <button class="btn-an" onclick="checkAnswer('an')">an</button>
-        <button class="btn-the" onclick="checkAnswer('the')">the</button>
-        <button class="btn-none" onclick="checkAnswer('-')">(No Article)</button>
+    <p class="subtitle">Landed on a Question Space? Pick a number!</p>
+
+    <div class="grid-container" id="number-grid">
+        <!-- Numbers will be generated by JavaScript here -->
     </div>
 
-    <div class="feedback" id="feedback-text"></div>
-    
-    <button class="btn-next" id="next-btn" onclick="nextQuestion()">Next Question</button>
-    
-    <div class="progress" id="progress-text">Question 1 / 10</div>
-</div>
+    <!-- The Pop-up Modal -->
+    <div class="modal-overlay" id="question-modal">
+        <div class="modal-content">
+            <div class="question-display" id="modal-question">Loading...</div>
+            <div class="answer-display" id="modal-answer">Answer here</div>
+            
+            <button class="action-btn" id="reveal-btn" onclick="revealAnswer()">Reveal Answer</button>
+            <button class="action-btn close-btn" id="close-btn" onclick="closeModal()" style="display:none;">Close & Return to Board</button>
+        </div>
+    </div>
 
-<script>
-    // Questions based on the B2 Grammar Reference
-    const questions = [
-        { text: "I bought ___ laptop yesterday.", answer: "a" },
-        { text: "I bought a laptop yesterday. ___ laptop is very fast.", answer: "the" },
-        { text: "She is ___ engineer.", answer: "an" },
-        { text: "___ scientists say that animals have complex brains.", answer: "-" },
-        { text: "He was ___ first person to arrive.", answer: "the" },
-        { text: "The Sun is ___ unique object in our solar system.", answer: "a" }, 
-        { text: "I love reading about ___ history.", answer: "-" },
-        { text: "That was ___ worst decision I've ever made.", answer: "the" },
-        { text: "My brother is ___ artist.", answer: "an" },
-        { text: "We need to talk to ___ government about this.", answer: "the" }
-    ];
+    <script>
+        // 25 Questions based on the B2 Grammar Reference
+        const questions = [
+            { q: "I recently read ___ report about personality tests.", a: "a" },
+            { q: "It was one of ___ worst decisions I've ever made.", a: "the" },
+            { q: "Have you ever taken ___ online psychology test?", a: "an" },
+            { q: "He really likes doing ___ puzzles.", a: "(No Article)" },
+            { q: "I think that ___ idea that you can decide your job based on personality is silly.", a: "the" },
+            { q: "I've never understood why ___ people read horoscopes.", a: "(No Article)" },
+            { q: "I bought ___ laptop yesterday.", a: "a" },
+            { q: "I bought a laptop. ___ laptop is very fast.", a: "the" },
+            { q: "She is ___ engineer.", a: "an" },
+            { q: "___ scientists say that animals have complex brains.", a: "(No Article)" },
+            { q: "He was ___ first person to arrive.", a: "the" },
+            { q: "___ Sun is at the center of our solar system.", a: "the" },
+            { q: "I love reading about ___ history.", a: "(No Article)" },
+            { q: "My brother is ___ artist.", a: "an" },
+            { q: "We need to talk to ___ government about this.", a: "the" },
+            { q: "We saw ___ stray dog on our walk.", a: "a" },
+            { q: "The stray dog followed us home. ___ dog was very friendly.", a: "the" },
+            { q: "He is looking for ___ new job.", a: "a" },
+            { q: "___ doctors recommend eating fresh vegetables.", a: "(No Article)" },
+            { q: "Look at ___ man standing by the door.", a: "the" },
+            { q: "Neil Armstrong was ___ first person on the moon.", a: "the" },
+            { q: "I don't usually like ___ coffee.", a: "(No Article)" },
+            { q: "___ coffee they serve here is delicious.", a: "the" },
+            { q: "We didn't separate ___ art and ___ science.", a: "(No Article) / (No Article)" },
+            { q: "Did you lock ___ front door?", a: "the" }
+        ];
 
-    let currentQuestion = 0;
-    let currentTeam = 1;
-    let score = { 1: 0, 2: 0, 3: 0, 4: 0 };
+        let currentQuestionIndex = -1;
 
-    function loadQuestion() {
-        document.getElementById('question-text').innerText = questions[currentQuestion].text;
-        document.getElementById('turn-indicator').innerText = `Team ${currentTeam}'s Turn`;
-        document.getElementById('feedback-text').innerText = "";
-        document.getElementById('next-btn').style.display = "none";
-        
-        // Re-enable buttons
-        const buttons = document.querySelectorAll('.btn-group button');
-        buttons.forEach(btn => btn.disabled = false);
+        // Initialize the grid on page load
+        window.onload = () => {
+            const grid = document.getElementById('number-grid');
+            for (let i = 0; i < questions.length; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'num-btn';
+                btn.innerText = i + 1;
+                btn.id = `btn-${i}`;
+                btn.onclick = () => openQuestion(i);
+                grid.appendChild(btn);
+            }
+        };
 
-        document.getElementById('progress-text').innerText = `Question ${currentQuestion + 1} / ${questions.length}`;
-    }
+        function openQuestion(index) {
+            currentQuestionIndex = index;
+            const qData = questions[index];
+            
+            // Set text content
+            document.getElementById('modal-question').innerText = qData.q;
+            
+            // Handle cases where there might be two blanks
+            let answerText = qData.a;
+            if (answerText.includes('/')) {
+                document.getElementById('modal-answer').innerHTML = answerText.split('/').map(a => `<span style="color:#10B981">${a}</span>`).join(' / ');
+            } else {
+                document.getElementById('modal-answer').innerText = answerText;
+            }
 
-    function checkAnswer(selected) {
-        const correctAnswer = questions[currentQuestion].answer;
-        const feedbackEl = document.getElementById('feedback-text');
-        
-        // Disable buttons after answering
-        const buttons = document.querySelectorAll('.btn-group button');
-        buttons.forEach(btn => btn.disabled = true);
+            // Reset modal state
+            document.getElementById('modal-answer').style.display = 'none';
+            document.getElementById('reveal-btn').style.display = 'block';
+            document.getElementById('close-btn').style.display = 'none';
 
-        if (selected === correctAnswer) {
-            feedbackEl.innerText = "✅ Correct! +10 points";
-            feedbackEl.className = "feedback correct";
-            score[currentTeam] += 10;
-        } else {
-            let displayCorrect = correctAnswer === '-' ? 'No Article' : correctAnswer;
-            feedbackEl.innerText = `❌ Incorrect. The answer was: ${displayCorrect}`;
-            feedbackEl.className = "feedback incorrect";
+            // Show modal
+            document.getElementById('question-modal').style.display = 'flex';
         }
 
-        document.getElementById('next-btn').style.display = "block";
-    }
-
-    function nextQuestion() {
-        currentQuestion++;
-        
-        // Rotate teams (1 -> 2 -> 3 -> 4 -> 1)
-        currentTeam = currentTeam === 4 ? 1 : currentTeam + 1;
-
-        if (currentQuestion < questions.length) {
-            loadQuestion();
-        } else {
-            endGame();
+        function revealAnswer() {
+            document.getElementById('modal-answer').style.display = 'block';
+            document.getElementById('reveal-btn').style.display = 'none';
+            document.getElementById('close-btn').style.display = 'block';
         }
-    }
 
-    function endGame() {
-        const container = document.getElementById('game-container');
-        let winner = 1;
-        for (let team in score) {
-            if (score[team] > score[winner]) winner = team;
+        function closeModal() {
+            // Hide modal
+            document.getElementById('question-modal').style.display = 'none';
+            
+            // Disable the button on the grid and change its style
+            const btn = document.getElementById(`btn-${currentQuestionIndex}`);
+            btn.disabled = true;
+            btn.innerText = "✓"; // Change text to a checkmark
         }
-        
-        container.innerHTML = `
-            <h1>Game Over!</h1>
-            <div style="font-size: 1.5rem; margin: 20px 0;">
-                🏆 Team ${winner} Wins! 🏆
-            </div>
-            <div style="font-size: 1.2rem;">
-                Team 1: ${score[1]} pts<br>
-                Team 2: ${score[2]} pts<br>
-                Team 3: ${score[3]} pts<br>
-                Team 4: ${score[4]} pts<br>
-            </div>
-            <button class="btn-next" style="display:block; margin-top:20px;" onclick="location.reload()">Play Again</button>
-        `;
-    }
-
-    // Initialize
-    loadQuestion();
-</script>
+    </script>
 </body>
 </html>
