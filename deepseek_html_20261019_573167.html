@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Article Island: Group Quest</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --secondary: #10B981;
+            --danger: #EF4444;
+            --bg: #F3F4F6;
+            --text: #1F2937;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        #game-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+        }
+        h1 { color: var(--primary); margin-top: 0; }
+        .team-turn { font-size: 1.2rem; font-weight: bold; color: var(--secondary); margin-bottom: 1rem; }
+        .question-box {
+            background: #EEF2FF;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            font-size: 1.3rem;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        button {
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.1s;
+        }
+        button:active { transform: scale(0.95); }
+        .btn-a, .btn-an, .btn-the, .btn-none { background: var(--primary); color: white; flex: 1; min-width: 100px;}
+        .btn-next { background: var(--secondary); color: white; width: 100%; margin-top: 1rem; display: none;}
+        .feedback { font-size: 1.1rem; margin-top: 1rem; font-weight: bold; min-height: 24px; }
+        .correct { color: var(--secondary); }
+        .incorrect { color: var(--danger); }
+        .progress { margin-top: 1.5rem; font-size: 0.9rem; color: #6B7280; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>Article Island</h1>
+    <div class="team-turn" id="turn-indicator">Team 1's Turn</div>
+    
+    <div class="question-box" id="question-text">Loading question...</div>
+    
+    <div class="btn-group" id="answer-buttons">
+        <button class="btn-a" onclick="checkAnswer('a')">a</button>
+        <button class="btn-an" onclick="checkAnswer('an')">an</button>
+        <button class="btn-the" onclick="checkAnswer('the')">the</button>
+        <button class="btn-none" onclick="checkAnswer('-')">(No Article)</button>
+    </div>
+
+    <div class="feedback" id="feedback-text"></div>
+    
+    <button class="btn-next" id="next-btn" onclick="nextQuestion()">Next Question</button>
+    
+    <div class="progress" id="progress-text">Question 1 / 10</div>
+</div>
+
+<script>
+    // Questions based on the B2 Grammar Reference
+    const questions = [
+        { text: "I bought ___ laptop yesterday.", answer: "a" },
+        { text: "I bought a laptop yesterday. ___ laptop is very fast.", answer: "the" },
+        { text: "She is ___ engineer.", answer: "an" },
+        { text: "___ scientists say that animals have complex brains.", answer: "-" },
+        { text: "He was ___ first person to arrive.", answer: "the" },
+        { text: "The Sun is ___ unique object in our solar system.", answer: "a" }, 
+        { text: "I love reading about ___ history.", answer: "-" },
+        { text: "That was ___ worst decision I've ever made.", answer: "the" },
+        { text: "My brother is ___ artist.", answer: "an" },
+        { text: "We need to talk to ___ government about this.", answer: "the" }
+    ];
+
+    let currentQuestion = 0;
+    let currentTeam = 1;
+    let score = { 1: 0, 2: 0, 3: 0, 4: 0 };
+
+    function loadQuestion() {
+        document.getElementById('question-text').innerText = questions[currentQuestion].text;
+        document.getElementById('turn-indicator').innerText = `Team ${currentTeam}'s Turn`;
+        document.getElementById('feedback-text').innerText = "";
+        document.getElementById('next-btn').style.display = "none";
+        
+        // Re-enable buttons
+        const buttons = document.querySelectorAll('.btn-group button');
+        buttons.forEach(btn => btn.disabled = false);
+
+        document.getElementById('progress-text').innerText = `Question ${currentQuestion + 1} / ${questions.length}`;
+    }
+
+    function checkAnswer(selected) {
+        const correctAnswer = questions[currentQuestion].answer;
+        const feedbackEl = document.getElementById('feedback-text');
+        
+        // Disable buttons after answering
+        const buttons = document.querySelectorAll('.btn-group button');
+        buttons.forEach(btn => btn.disabled = true);
+
+        if (selected === correctAnswer) {
+            feedbackEl.innerText = "✅ Correct! +10 points";
+            feedbackEl.className = "feedback correct";
+            score[currentTeam] += 10;
+        } else {
+            let displayCorrect = correctAnswer === '-' ? 'No Article' : correctAnswer;
+            feedbackEl.innerText = `❌ Incorrect. The answer was: ${displayCorrect}`;
+            feedbackEl.className = "feedback incorrect";
+        }
+
+        document.getElementById('next-btn').style.display = "block";
+    }
+
+    function nextQuestion() {
+        currentQuestion++;
+        
+        // Rotate teams (1 -> 2 -> 3 -> 4 -> 1)
+        currentTeam = currentTeam === 4 ? 1 : currentTeam + 1;
+
+        if (currentQuestion < questions.length) {
+            loadQuestion();
+        } else {
+            endGame();
+        }
+    }
+
+    function endGame() {
+        const container = document.getElementById('game-container');
+        let winner = 1;
+        for (let team in score) {
+            if (score[team] > score[winner]) winner = team;
+        }
+        
+        container.innerHTML = `
+            <h1>Game Over!</h1>
+            <div style="font-size: 1.5rem; margin: 20px 0;">
+                🏆 Team ${winner} Wins! 🏆
+            </div>
+            <div style="font-size: 1.2rem;">
+                Team 1: ${score[1]} pts<br>
+                Team 2: ${score[2]} pts<br>
+                Team 3: ${score[3]} pts<br>
+                Team 4: ${score[4]} pts<br>
+            </div>
+            <button class="btn-next" style="display:block; margin-top:20px;" onclick="location.reload()">Play Again</button>
+        `;
+    }
+
+    // Initialize
+    loadQuestion();
+</script>
+</body>
+</html>
